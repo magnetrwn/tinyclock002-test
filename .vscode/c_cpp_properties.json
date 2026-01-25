@@ -1,0 +1,60 @@
+//
+// !!! WARNING !!! AUTO-GENERATED FILE!
+// PLEASE DO NOT MODIFY IT AND USE "platformio.ini":
+// https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags
+//
+{
+    "configurations": [
+        {
+            "name": "PlatformIO",
+            "includePath": [
+                "/home/eye/Developer/tinyclock002-test/include",
+                "/home/eye/Developer/tinyclock002-test/src",
+                "/home/eye/.platformio/packages/framework-wch-noneos-sdk/Core/ch32v00Xx",
+                "/home/eye/.platformio/packages/framework-wch-noneos-sdk/Peripheral/ch32v00Xx/inc",
+                "/home/eye/.platformio/packages/framework-wch-noneos-sdk/Peripheral/ch32v00Xx/src",
+                "/home/eye/.platformio/packages/framework-wch-noneos-sdk/Startup",
+                "/home/eye/.platformio/packages/framework-wch-noneos-sdk/System/ch32v00Xx",
+                "/home/eye/.platformio/packages/framework-wch-noneos-sdk/Debug/ch32v00Xx",
+                ""
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "/home/eye/Developer/tinyclock002-test/include",
+                    "/home/eye/Developer/tinyclock002-test/src",
+                    "/home/eye/.platformio/packages/framework-wch-noneos-sdk/Core/ch32v00Xx",
+                    "/home/eye/.platformio/packages/framework-wch-noneos-sdk/Peripheral/ch32v00Xx/inc",
+                    "/home/eye/.platformio/packages/framework-wch-noneos-sdk/Peripheral/ch32v00Xx/src",
+                    "/home/eye/.platformio/packages/framework-wch-noneos-sdk/Startup",
+                    "/home/eye/.platformio/packages/framework-wch-noneos-sdk/System/ch32v00Xx",
+                    "/home/eye/.platformio/packages/framework-wch-noneos-sdk/Debug/ch32v00Xx",
+                    ""
+                ]
+            },
+            "defines": [
+                "PLATFORMIO=60118",
+                "CH32V002A4",
+                "CH32V00X",
+                "CH32V00x",
+                "CH32V002",
+                "CH32V00Xx",
+                "SYSCLK_FREQ_48MHz_HSI=48000000",
+                "SYSCLK_FREQ_48MHZ_HSI=48000000",
+                "__PIO_CPP_SUPPORT__",
+                ""
+            ],
+            "cStandard": "gnu99",
+            "cppStandard": "gnu++17",
+            "compilerPath": "/home/eye/.platformio/packages/toolchain-riscv/bin/riscv-wch-elf-gcc",
+            "compilerArgs": [
+                "-msmall-data-limit=0",
+                "-msave-restore",
+                "-march=rv32ec_zmmul_xw",
+                "-mabi=ilp32e",
+                ""
+            ]
+        }
+    ],
+    "version": 4
+}
