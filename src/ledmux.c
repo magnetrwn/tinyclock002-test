@@ -11,6 +11,7 @@ static const uint8_t k_patterns[12] = {
     0b00010111, 0b00011011, 0b00011101, 0b00011110,
 };
 
+static const uint8_t k_full  = 0b01110000;
 static const uint8_t k_blank = 0b00001111;
 
 static inline void hi_srclk(void) { GPIO_SetBits(GPIOC, LEDMUX_SRCLK); }
@@ -24,9 +25,11 @@ static inline void lo_ser(void) { GPIO_ResetBits(GPIOC, LEDMUX_SER); }
 static void push8(uint8_t v) {
     for (int i = 0; i < 8; ++i) {
         (v & (1u << i)) ? hi_ser() : lo_ser();
+
         hi_srclk();
         lo_srclk();
     }
+
     hi_rclk();
     lo_rclk();
 }
@@ -37,6 +40,21 @@ static void scan_frame_us(uint32_t ton_us, uint32_t toff_us) {
         Delay_Us(ton_us);
         push8(k_blank);
         Delay_Us(toff_us);
+    }
+}
+
+#define DUTY_F_TICK_US 4
+static void duty_frame_ticks(int a, int b, int step, int hold_frames) {
+    for (int tick = a; (a < b) ? (tick <= b) : (tick >= b); tick += step) {
+
+        int t_on_ticks = tick;
+        int t_off_ticks = ((a > b) ? a : b) - t_on_ticks + 1;
+
+        int t_on_us  = t_on_ticks * DUTY_F_TICK_US;
+        int t_off_us = t_off_ticks * DUTY_F_TICK_US;
+
+        for (int f = 0; f < hold_frames; ++f)
+            scan_frame_us(t_on_us, t_off_us);
     }
 }
 
@@ -53,33 +71,16 @@ void LEDMUX_GPIOWalk(void) {
     lo_rclk(); 
     lo_ser();
 
-    push8(0b01110000);
+    push8(k_full);
     Delay_Ms(500);
     push8(k_blank);
-    Delay_Ms(250);
-
-    const uint32_t Tslot_us = 200;
-    const uint32_t hold_frames = 10;
+    Delay_Ms(500);
 
     for (;;) {
-        for (uint32_t duty = 5; duty <= 95; duty += 5) {
-            uint32_t ton  = (Tslot_us * duty) / 100u;
-            uint32_t toff = Tslot_us - ton;
-            if (ton  < 2) ton  = 2;
-            if (toff < 2) toff = 2;
-
-            for (uint32_t f = 0; f < hold_frames; ++f)
-                scan_frame_us(ton, toff);
-        }
-
-        for (int duty = 95; duty >= 5; duty -= 5) {
-            uint32_t ton  = (Tslot_us * (uint32_t)duty) / 100u;
-            uint32_t toff = Tslot_us - ton;
-            if (ton  < 2) ton  = 2;
-            if (toff < 2) toff = 2;
-
-            for (uint32_t f = 0; f < hold_frames; ++f)
-                scan_frame_us(ton, toff);
-        }
+        duty_frame_ticks(0, 100, 10, 5);
+        push8(k_full);
+        Delay_Ms(250);
+        duty_frame_ticks(100, 0, -10, 5);
+        Delay_Ms(250);
     }
 }
