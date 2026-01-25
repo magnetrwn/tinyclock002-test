@@ -34,8 +34,13 @@ static void push8(uint8_t v) {
     lo_rclk();
 }
 
-static void scan_frame_us(uint32_t ton_us, uint32_t toff_us) {
+static void push8_by_led(uint16_t leds, uint32_t ton_us, uint32_t toff_us) {
     for (int i = 0; i < 12; ++i) {
+        if (!(leds & (1u << i))) {
+            Delay_Us(ton_us + toff_us);
+            continue;
+        }
+
         push8(k_patterns[i]);
         Delay_Us(ton_us);
         push8(k_blank);
@@ -44,17 +49,20 @@ static void scan_frame_us(uint32_t ton_us, uint32_t toff_us) {
 }
 
 #define DUTY_F_TICK_US 4
-static void duty_frame_ticks(int a, int b, int step, int hold_frames) {
+static void push8_animate(uint16_t leds, int a, int b, int step, int hold_steps) {
     for (int tick = a; (a < b) ? (tick <= b) : (tick >= b); tick += step) {
 
         int t_on_ticks = tick;
-        int t_off_ticks = ((a > b) ? a : b) - t_on_ticks + 1;
+        int t_off_ticks = ((a > b) ? a : b) - t_on_ticks;
 
-        int t_on_us  = t_on_ticks * DUTY_F_TICK_US;
+        int t_on_us = t_on_ticks * DUTY_F_TICK_US;
         int t_off_us = t_off_ticks * DUTY_F_TICK_US;
 
-        for (int f = 0; f < hold_frames; ++f)
-            scan_frame_us(t_on_us, t_off_us);
+        if (t_on_us < DUTY_F_TICK_US) t_on_us = DUTY_F_TICK_US;
+        if (t_off_us < DUTY_F_TICK_US) t_off_us = DUTY_F_TICK_US;
+
+        for (int f = 0; f < hold_steps; ++f)
+            push8_by_led(leds, t_on_us, t_off_us);
     }
 }
 
@@ -71,16 +79,26 @@ void LEDMUX_GPIOWalk(void) {
     lo_rclk(); 
     lo_ser();
 
-    push8(k_full);
-    Delay_Ms(500);
-    push8(k_blank);
-    Delay_Ms(500);
+    for (int i = 0; i < 4; ++i) {
+        push8(k_full);
+        Delay_Us(67500);
+        push8(k_blank);
+        Delay_Us(67500);
+    }
 
     for (;;) {
-        duty_frame_ticks(0, 100, 10, 5);
+        for (int t = 0, i = 0x41, j = 5, k = 0; t < 22; ++t, i = (i == 0x820) ? 0x41 : (i << 1), k ? ++j : --j, ( (j == 5) || (j == -5) ? (k = !k) : 0 ) ) {
+            push8_animate(i, 0, 100, 10, (j < 1) ? 1 : j);
+            push8_animate(i, 100, 0, -10, (j < 1) ? 1 : j);
+        }
+
+        for (int t = 0, i = 0x208, j = 5, k = 0; t < 22; ++t, i = (i == 0x820) ? 0x41 : (i << 1), k ? ++j : --j, ( (j == 5) || (j == -5) ? (k = !k) : 0 ) ) {
+            push8_animate(~i, 0, 100, 10, (j < 1) ? 1 : j);
+            push8_animate(~i, 100, 0, -10, (j < 1) ? 1 : j);
+        }
+
         push8(k_full);
-        Delay_Ms(250);
-        duty_frame_ticks(100, 0, -10, 5);
-        Delay_Ms(250);
+        Delay_Ms(2000);
+        push8(k_blank);
     }
 }
