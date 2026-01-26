@@ -1,6 +1,7 @@
 #ifndef LEDMUX_H_
 #define LEDMUX_H_
 
+#define LEDMUX_PB RCC_PB2Periph_GPIOC
 #define LEDMUX_SRCLK GPIO_Pin_3  // LCLK = SRCLK
 #define LEDMUX_SER   GPIO_Pin_6  // LDATA = SER
 #define LEDMUX_RCLK  GPIO_Pin_7  // LSET = RCLK
