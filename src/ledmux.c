@@ -48,7 +48,7 @@ static void push8_by_led(uint16_t leds, uint32_t ton_us, uint32_t toff_us) {
     }
 }
 
-#define DUTY_F_TICK_US 4
+#define DUTY_F_TICK_US 6
 static void push8_animate(uint16_t leds, int a, int b, int step, int hold_steps) {
     for (int tick = a; (a < b) ? (tick <= b) : (tick >= b); tick += step) {
 
@@ -79,24 +79,29 @@ void LEDMUX_GPIOWalk(void) {
     lo_rclk(); 
     lo_ser();
 
-    for (int i = 0; i < 4; ++i) {
-        push8(k_full);
-        Delay_Us(67500);
-        push8(k_blank);
-        Delay_Us(67500);
-    }
+    // for (int i = 0; i < 8; ++i) {
+    //     push8(k_full);
+    //     Delay_Us(67500);
+    //     push8(k_blank);
+    //     Delay_Us(67500);
+    // }
 
-    for (int t = 0, i = 0x41, j = 5, k = 0; t < 22; ++t, i = (i == 0x820) ? 0x41 : (i << 1), k ? ++j : --j, ( (j == 5) || (j == -5) ? (k = !k) : 0 ) ) {
-        push8_animate(i, 0, 90, 15, (j < 1) ? 1 : j);
-        push8_animate(i, 90, 0, -15, (j < 1) ? 1 : j);
-    }
+    // for (int t = 0, i = 0x41, j = 5, k = 0; t < 22; ++t, i = (i == 0x820) ? 0x41 : (i << 1), k ? ++j : --j, ( (j == 5) || (j == -5) ? (k = !k) : 0 ) ) {
+    //     push8_animate(i, 0, 90, 15, (j < 1) ? 1 : j);
+    //     push8_animate(i, 90, 0, -15, (j < 1) ? 1 : j);
+    // }
 
-    for (int t = 0, i = 0x208, j = 5, k = 0; t < 22; ++t, i = (i == 0x820) ? 0x41 : (i << 1), k ? ++j : --j, ( (j == 5) || (j == -5) ? (k = !k) : 0 ) ) {
-        push8_animate(~i, 0, 90, 15, (j < 1) ? 1 : j);
-        push8_animate(~i, 90, 0, -15, (j < 1) ? 1 : j);
-    }
+    // for (int t = 0, i = 0x208, j = 5, k = 0; t < 22; ++t, i = (i == 0x820) ? 0x41 : (i << 1), k ? ++j : --j, ( (j == 5) || (j == -5) ? (k = !k) : 0 ) ) {
+    //     push8_animate(~i, 0, 90, 15, (j < 1) ? 1 : j);
+    //     push8_animate(~i, 90, 0, -15, (j < 1) ? 1 : j);
+    // }
 
-    push8(k_full);
-    Delay_Ms(2000);
-    push8(k_blank);
+    // push8(k_full);
+    // Delay_Ms(2000);
+    // push8(k_blank);
+
+    for (int i = 0; i < 12; ++i) {
+        push8_animate(1 << i, 0, 100, 10, 1);
+        push8_animate(1 << i, 100, 0, -10, 1);
+    }
 }
