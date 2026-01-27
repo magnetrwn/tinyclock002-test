@@ -5,7 +5,9 @@
 #include <ch32v00X_gpio.h>
 #include <debug.h>
 
-static const uint8_t k_patterns[12] = {
+#define CONC_ANIM_EMPTY 0
+
+static const uint8_t k_patterns[LEDMUX_LED_COUNT] = {
     0b01000111, 0b01001011, 0b01001101, 0b01001110,
     0b00100111, 0b00101011, 0b00101101, 0b00101110,
     0b00010111, 0b00011011, 0b00011101, 0b00011110,
@@ -20,10 +22,18 @@ static inline void lo_rclk(void) { GPIO_ResetBits(GPIOC, LEDMUX_RCLK); }
 static inline void hi_ser(void) { GPIO_SetBits(GPIOC, LEDMUX_SER); }
 static inline void lo_ser(void) { GPIO_ResetBits(GPIOC, LEDMUX_SER); }
 
+typedef struct {
+    LEDMUX_anim_params_t params; // TODO: optimize "a" out
+    uint16_t leds; // track the LEDs to animate, or CONC_ANIM_EMPTY if empty
+    uint16_t value; // current brightness value in range (0..LEDMUX_TICK_LED_FOCUS_US)
+} conc_anim_t;
+
+static conc_anim_t animations[LEDMUX_MAX_CONCURRENT_ANIMATIONS];
+
 // NOTE: LSB first
 static void push8(uint8_t v) {
     for (int i = 0; i < 8; ++i) {
-        (v & (1u << i)) ? hi_ser() : lo_ser();
+        (v & LEDMUX_ROTL(1u, i)) ? hi_ser() : lo_ser();
 
         hi_srclk();
         lo_srclk();
@@ -33,32 +43,39 @@ static void push8(uint8_t v) {
     lo_rclk();
 }
 
-static void push8_by_led(uint16_t leds, uint32_t ton_us, uint32_t toff_us) {
-    for (int i = 0; i < 12; ++i) {
-        if (!(leds & (1u << i))) {
-            Delay_Us(ton_us + toff_us);
-            continue;
-        }
+#define LEDMUX_MIN_ON_US 2
+#define LEDMUX_MIN_OFF_US 2
+static inline void value_to_timing(uint32_t active_us, uint32_t* ton_us, uint32_t* toff_us) {
+    if (!ton_us || !toff_us) 
+        return;
 
-        push8(k_patterns[i]);
-        Delay_Us(ton_us);
-        push8(k_blank);
-        Delay_Us(toff_us);
+    uint32_t slot_len_us = LEDMUX_TICK_LED_FOCUS_US;
+
+    if (slot_len_us < (LEDMUX_MIN_ON_US + LEDMUX_MIN_OFF_US))
+        slot_len_us = (LEDMUX_MIN_ON_US + LEDMUX_MIN_OFF_US);
+    if (active_us > slot_len_us) 
+        active_us = slot_len_us;
+
+    uint32_t ton = active_us;
+    uint32_t toff = slot_len_us - ton;
+
+    if (ton < LEDMUX_MIN_ON_US) {
+        ton = LEDMUX_MIN_ON_US;
+        toff = (slot_len_us > ton) ? (slot_len_us - ton) : 0;
     }
-}
 
-static void push8_animate(uint16_t leds, int a, int b, int step, int hold_steps) {
-    for (int tick = a; (a < b) ? (tick <= b) : (tick >= b); tick += step) {
-
-        int t_on_ticks = tick;
-        int t_off_ticks = ((a > b) ? a : b) - t_on_ticks;
-
-        int t_on_us = t_on_ticks * 4;
-        int t_off_us = t_off_ticks * 4;
-
-        for (int f = 0; f < hold_steps; ++f)
-            push8_by_led(leds, t_on_us, t_off_us);
+    if (toff < LEDMUX_MIN_OFF_US) {
+        ton = (slot_len_us > toff) ? (slot_len_us - toff) : 0;
+        toff = LEDMUX_MIN_OFF_US;
     }
+
+    if (ton < LEDMUX_MIN_ON_US) 
+        ton = LEDMUX_MIN_ON_US;
+    if (toff < LEDMUX_MIN_OFF_US) 
+        toff = LEDMUX_MIN_OFF_US;
+
+    *ton_us = ton;
+    *toff_us = toff;
 }
 
 void LEDMUX_init(void) {
@@ -73,16 +90,66 @@ void LEDMUX_init(void) {
     lo_srclk(); 
     lo_rclk(); 
     lo_ser();
+
+    for (int i = 0; i < LEDMUX_MAX_CONCURRENT_ANIMATIONS; ++i) {
+        animations[i].leds = CONC_ANIM_EMPTY;
+        animations[i].value = 0;
+    }
 }
 
-void LEDMUX_GPIO_set(uint16_t leds) {
+void LEDMUX_set(uint16_t leds) {
     push8(leds);
 }
 
-void LEDMUX_GPIO_animate(uint16_t leds, const LEDMUX_anim_params_t* params) {
-    push8_animate(leds, params->a, params->b, params->step, params->hold_steps);
+int LEDMUX_animate(uint16_t leds, const LEDMUX_anim_params_t* params) {
+    for (int i = 0; i < LEDMUX_MAX_CONCURRENT_ANIMATIONS; ++i) {
+        conc_anim_t* anim = &animations[i];
+
+        if (anim->leds == CONC_ANIM_EMPTY) {
+            anim->leds = leds;
+            anim->params = *params;
+            anim->value = params->a;
+            return 0;
+        }
+    }
+    return -1;
 }
 
-void LEDMUX_GPIO_clear(void) {
+void LEDMUX_step(void) {
+    uint32_t active_us[LEDMUX_LED_COUNT] = {0};
+
+    for (int i = 0; i < LEDMUX_MAX_CONCURRENT_ANIMATIONS; ++i) {
+        conc_anim_t* anim = &animations[i];
+
+        if (anim->leds == CONC_ANIM_EMPTY)
+            continue;
+
+        for (int i = 0; i < LEDMUX_LED_COUNT; ++i)
+            if (anim->leds & LEDMUX_ROTL(1u, i))
+                active_us[i] = (active_us[i] > anim->value) ? active_us[i] : anim->value;
+
+        anim->value += anim->params.step;
+        if ((anim->params.step > 0 && anim->value >= anim->params.b) || (anim->params.step < 0 && anim->value <= anim->params.b))
+            anim->leds = CONC_ANIM_EMPTY;
+    }
+
+    for (int d = 0; d < LEDMUX_LED_COUNT; ++d) {
+        uint32_t ton_us, toff_us;
+    
+        if (active_us[d] == 0) {
+            Delay_Us(LEDMUX_TICK_LED_FOCUS_US);
+            continue;
+        }
+    
+        value_to_timing(active_us[d], &ton_us, &toff_us);
+        push8(k_patterns[d]);
+        Delay_Us(ton_us);
+        push8(k_blank);
+        Delay_Us(toff_us);
+    }
+    
+}
+
+void LEDMUX_clear(void) {
     push8(k_blank);
 }
