@@ -2,37 +2,12 @@
 #include <ch32v00X_rcc.h>
 #include <ch32v00X_misc.h>
 #include <ch32v00X_i2c.h>
-#include <ch32v00X_pwr.h>
-#include <ch32v00X_exti.h>
 #include <debug.h>
 
 #include "ledmux.h"
 #include "uart.h"
 #include "ds1302.h"
-
-static void awu_exti9_event_init(void) {
-    RCC_PB2PeriphClockCmd(RCC_PB2Periph_AFIO, ENABLE);
-
-    EXTI_InitTypeDef ex = {0};
-    ex.EXTI_Line    = EXTI_Line9; // AWU is wired internally to EXTI9
-    ex.EXTI_Mode    = EXTI_Mode_Event; // NOTE: Event, not Interrupt
-    ex.EXTI_Trigger = EXTI_Trigger_Falling;
-    ex.EXTI_LineCmd = ENABLE;
-    EXTI_Init(&ex);
-}
-
-static void standby_awu_init(void) {
-    RCC_PB1PeriphClockCmd(RCC_PB1Periph_PWR, ENABLE);
-
-    RCC_LSICmd(ENABLE);
-    while (RCC_GetFlagStatus(RCC_FLAG_LSIRDY) == RESET) {}
-
-    PWR_AWU_SetPrescaler(PWR_AWU_Prescaler_4096);
-    PWR_AWU_SetWindowValue(48); // ~128kHz/4096*48 = ~1.5s
-    PWR_AutoWakeUpCmd(ENABLE);
-
-    awu_exti9_event_init();
-}
+#include "pm.h"
 
 int main(void) {
     SystemInit();
@@ -40,17 +15,18 @@ int main(void) {
     RCC_SYSCLKConfig(RCC_SYSCLKSource_HSI);
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1);
     SystemCoreClockUpdate();
+    UART_Init(230400);
 
     __enable_irq();
-    standby_awu_init();
-
-    UART_Init(230400);
-    Delay_Ms(1000);
-    printf("SystemCoreClock: %d Hz.\r\n", (int) SystemCoreClock);
-    printf("Device ID: 0x%08x.\r\n", (uint) DBGMCU_GetDEVID());
+    PM_standby_init(500);
+    PM_standby_enter();
+    PM_standby_enter();
 
     DS1302_init_basic();
+    printf("SystemCoreClock: %d Hz.\r\n", (int) SystemCoreClock);
+    printf("Device ID: 0x%08x.\r\n", (uint) DBGMCU_GetDEVID());
     printf("Setting default RTC time.\r\n");
+
     rtc_time_t t_set = {
         .sec   = 0,
         .min   = 0,
@@ -62,11 +38,16 @@ int main(void) {
     };
     DS1302_set_time(&t_set);
 
+    LEDMUX_init();
+    LEDMUX_anim_params_t anim_fwd = { 0, 100, 5, 1 };
+    LEDMUX_anim_params_t anim_rev = { 100, 0, -5, 1 };
     printf("Looping LED mux animation.\r\n");
     for (;;) {
-        PWR_EnterSTANDBYMode(PWR_STANDBYEntry_WFE);
-
-        LEDMUX_GPIOWalk();
+        for (int i = 0; i < 12; ++i) {
+            LEDMUX_GPIO_animate(0x555 << (i & 1), &anim_fwd);
+            LEDMUX_GPIO_animate(0x555 << (i & 1), &anim_rev);
+            PM_standby_enter();
+        }
 
         rtc_time_t now;
         if (!DS1302_get_time(&now)) {

@@ -11,7 +11,6 @@ static const uint8_t k_patterns[12] = {
     0b00010111, 0b00011011, 0b00011101, 0b00011110,
 };
 
-static const uint8_t k_full  = 0b01110000;
 static const uint8_t k_blank = 0b00001111;
 
 static inline void hi_srclk(void) { GPIO_SetBits(GPIOC, LEDMUX_SRCLK); }
@@ -48,25 +47,21 @@ static void push8_by_led(uint16_t leds, uint32_t ton_us, uint32_t toff_us) {
     }
 }
 
-#define DUTY_F_TICK_US 6
 static void push8_animate(uint16_t leds, int a, int b, int step, int hold_steps) {
     for (int tick = a; (a < b) ? (tick <= b) : (tick >= b); tick += step) {
 
         int t_on_ticks = tick;
         int t_off_ticks = ((a > b) ? a : b) - t_on_ticks;
 
-        int t_on_us = t_on_ticks * DUTY_F_TICK_US;
-        int t_off_us = t_off_ticks * DUTY_F_TICK_US;
-
-        if (t_on_us < DUTY_F_TICK_US) t_on_us = DUTY_F_TICK_US;
-        if (t_off_us < DUTY_F_TICK_US) t_off_us = DUTY_F_TICK_US;
+        int t_on_us = t_on_ticks * 4;
+        int t_off_us = t_off_ticks * 4;
 
         for (int f = 0; f < hold_steps; ++f)
             push8_by_led(leds, t_on_us, t_off_us);
     }
 }
 
-void LEDMUX_GPIOWalk(void) {
+void LEDMUX_init(void) {
     RCC_PB2PeriphClockCmd(LEDMUX_PB, ENABLE);
 
     GPIO_InitTypeDef gpio = {0};
@@ -78,30 +73,16 @@ void LEDMUX_GPIOWalk(void) {
     lo_srclk(); 
     lo_rclk(); 
     lo_ser();
+}
 
-    // for (int i = 0; i < 8; ++i) {
-    //     push8(k_full);
-    //     Delay_Us(67500);
-    //     push8(k_blank);
-    //     Delay_Us(67500);
-    // }
+void LEDMUX_GPIO_set(uint16_t leds) {
+    push8(leds);
+}
 
-    // for (int t = 0, i = 0x41, j = 5, k = 0; t < 22; ++t, i = (i == 0x820) ? 0x41 : (i << 1), k ? ++j : --j, ( (j == 5) || (j == -5) ? (k = !k) : 0 ) ) {
-    //     push8_animate(i, 0, 90, 15, (j < 1) ? 1 : j);
-    //     push8_animate(i, 90, 0, -15, (j < 1) ? 1 : j);
-    // }
+void LEDMUX_GPIO_animate(uint16_t leds, const LEDMUX_anim_params_t* params) {
+    push8_animate(leds, params->a, params->b, params->step, params->hold_steps);
+}
 
-    // for (int t = 0, i = 0x208, j = 5, k = 0; t < 22; ++t, i = (i == 0x820) ? 0x41 : (i << 1), k ? ++j : --j, ( (j == 5) || (j == -5) ? (k = !k) : 0 ) ) {
-    //     push8_animate(~i, 0, 90, 15, (j < 1) ? 1 : j);
-    //     push8_animate(~i, 90, 0, -15, (j < 1) ? 1 : j);
-    // }
-
-    // push8(k_full);
-    // Delay_Ms(2000);
-    // push8(k_blank);
-
-    for (int i = 0; i < 12; ++i) {
-        push8_animate(1 << i, 0, 100, 10, 1);
-        push8_animate(1 << i, 100, 0, -10, 1);
-    }
+void LEDMUX_GPIO_clear(void) {
+    push8(k_blank);
 }
