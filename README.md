@@ -1,6 +1,6 @@
 <!-- Project cover -->
 <p align="center">
-  <img src="running-ledmux.jpg" alt="tinyclock002 running LED mux demo" width="100%">
+  <img src="media/running-ledmux.jpg" alt="tinyclock002 running LED mux demo" width="100%">
 </p>
 
 # tinyclock002
@@ -29,9 +29,13 @@ Specific measurements aren't available yet. Estimations can be made based on the
 ## Images
 
 <p align="center">
-  <img src="overview.jpg" alt="tinyclock002 overview" width="100%">
+  <img src="media/overview.jpg" alt="tinyclock002 overview" width="100%">
 </p>
 
 <p align="center">
-  <img src="test-fit-unpop.jpg" alt="tinyclock002 case test fit unpopulated" width="100%">
+  <video src="media/running-ledmux.mp4" alt="tinyclock002 running LED mux demo" width="100%" controls></video>
+</p>
+
+<p align="center">
+  <img src="media/test-fit-unpop.jpg" alt="tinyclock002 case test fit unpopulated" width="100%">
 </p>
