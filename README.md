@@ -1,6 +1,6 @@
 <!-- Project cover -->
 <p align="center">
-  <img src="running-ledmux.jpg" alt="tinyclock002 running LED mux demo" width="100%" height="340px" style="object-fit: cover;">
+  <img src="running-ledmux.jpg" alt="tinyclock002 running LED mux demo" width="100%">
 </p>
 
 # tinyclock002
@@ -25,3 +25,13 @@ Here are some rough current consumption measurements with the current demo:
 - Running with LEDMUX demo: ~2.3 mA.
 - CH32V002 in standby mode: ~500 µA.
 Specific measurements aren't available yet. Estimations can be made based on the datasheets and idle/quiescent current figures.
+
+## Images
+
+<p align="center">
+  <img src="overview.jpg" alt="tinyclock002 overview" width="100%">
+</p>
+
+<p align="center">
+  <img src="test-fit-unpop.jpg" alt="tinyclock002 case test fit unpopulated" width="100%">
+</p>
