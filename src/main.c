@@ -40,7 +40,7 @@ int main(void) {
 
     LEDMUX_init();
     printf("Looping LED mux animation.\r\n");
-    LEDMUX_anim_params_t anim = { .a = 0, .b = LEDMUX_TICK_LED_FOCUS_US, .step = 32, .flip = 1 };
+    LEDMUX_anim_params_t anim = { .a = 0, .b = LEDMUX_TICK_LED_FOCUS_US, .step = 40, .flip = 1 };
 
     int i = 0;
     uint16_t rot = 0b000000000001;
@@ -52,6 +52,13 @@ int main(void) {
             else
                 rot = LEDMUX_ROTL(rot, 1);
             LEDMUX_animate(rot, &anim);
+
+            anim.b -= 25;
+            anim.step -= 1;
+            if (anim.b == 0) {
+                anim.b = LEDMUX_TICK_LED_FOCUS_US;
+                anim.step = 40;
+            }
         }
 
         if (!(i & 0xff)) {
