@@ -129,8 +129,17 @@ void LEDMUX_step(void) {
                 active_us[i] = (active_us[i] > anim->value) ? active_us[i] : anim->value;
 
         anim->value += anim->params.step;
-        if ((anim->params.step > 0 && anim->value >= anim->params.b) || (anim->params.step < 0 && anim->value <= anim->params.b))
-            anim->leds = CONC_ANIM_EMPTY;
+        if ((anim->params.step > 0 && anim->value >= anim->params.b) || (anim->params.step < 0 && anim->value <= anim->params.b)) {
+            if (anim->params.flip > 0) {
+                anim->params.step = -anim->params.step;
+                uint16_t s = anim->params.a;
+                anim->params.a = anim->params.b;
+                anim->params.b = s;
+                if (anim->params.flip != 255)
+                    --anim->params.flip;
+            } else
+                anim->leds = CONC_ANIM_EMPTY;
+        }
     }
 
     for (int d = 0; d < LEDMUX_LED_COUNT; ++d) {

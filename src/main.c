@@ -40,31 +40,35 @@ int main(void) {
 
     LEDMUX_init();
     printf("Looping LED mux animation.\r\n");
-    const LEDMUX_anim_params_t anim1 = { .a = LEDMUX_TICK_LED_FOCUS_US, .b = 0, .step = -5 };
-    for (int i = 0, j = 0;; ++i) {
-        if (i == 8) {
-            LEDMUX_animate(LEDMUX_ROTR(4u, j), &anim1);
-            ++j;
-            if (j >= LEDMUX_LED_COUNT)
-                j = 0;
-            i = 0;
+    LEDMUX_anim_params_t anim = { .a = 0, .b = LEDMUX_TICK_LED_FOCUS_US, .step = 32, .flip = 1 };
+
+    int i = 0;
+    uint16_t rot = 0b000000000001;
+    int is_cw = 0;
+    for (;; ++i) {
+        if (!(i & 0x7)) {
+            if (is_cw)
+                rot = LEDMUX_ROTR(rot, 1);
+            else
+                rot = LEDMUX_ROTL(rot, 1);
+            LEDMUX_animate(rot, &anim);
+        }
+
+        if (!(i & 0xff)) {
+            is_cw = !is_cw;
+
+            rtc_time_t now;
+            if (DS1302_get_time(&now) == 0) {
+                printf("RTC time: %04d-%02d-%02d %02d:%02d:%02d (DOW=%d).\r\n",
+                        now.year + 2000u, now.month, now.day,
+                        now.hour, now.min, now.sec,
+                        now.dow);
+            } else
+                printf("Failed to read RTC time.\r\n");
         }
 
         LEDMUX_step();
-
-        // for (int i = 0; i < LEDMUX_LED_COUNT; ++i) {
-        //     LEDMUX_animate(0x555 << (i & 1), &anim);
-        //     LEDMUX_animate(0x555 << (i & 1), &anim_rev);
-        //     PM_standby_enter();
-        // }
-
-        // rtc_time_t now;
-        // if (!DS1302_get_time(&now)) {
-        //     printf("RTC time: %04d-%02d-%02d %02d:%02d:%02d (DOW=%d).\r\n",
-        //            now.year + 2000u, now.month, now.day,
-        //            now.hour, now.min, now.sec,
-        //            now.dow);
-        // } else
-        //     printf("Failed to read RTC time.\r\n");
     }
+
+    return 0;
 }
