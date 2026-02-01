@@ -115,6 +115,15 @@ int LEDMUX_animate(uint16_t leds, const LEDMUX_anim_params_t* params) {
     return -1;
 }
 
+int LEDMUX_count_anim(void) {
+    int count = 0;
+    for (int i = 0; i < LEDMUX_MAX_CONCURRENT_ANIMATIONS; ++i) {
+        if (animations[i].leds != CONC_ANIM_EMPTY)
+            ++count;
+    }
+    return count;
+}
+
 void LEDMUX_step(void) {
     uint32_t active_us[LEDMUX_LED_COUNT] = {0};
 
@@ -156,7 +165,6 @@ void LEDMUX_step(void) {
         push8(k_blank);
         Delay_Us(toff_us);
     }
-    
 }
 
 void LEDMUX_clear(void) {

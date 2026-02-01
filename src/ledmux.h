@@ -25,6 +25,7 @@ typedef struct {
 void LEDMUX_init(void);
 void LEDMUX_set(uint16_t leds);
 int LEDMUX_animate(uint16_t leds, const LEDMUX_anim_params_t* params);
+int LEDMUX_count_anim(void);
 void LEDMUX_step(void);
 void LEDMUX_clear(void);
 
