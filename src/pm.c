@@ -26,3 +26,20 @@ void PM_standby_init(int wakeup_ms) {
 void PM_standby_enter(void) {
     PWR_EnterSTANDBYMode(PWR_STANDBYEntry_WFE);
 }
+
+// NOTE: exiting standby returns to HSI 24MHz without PLL, call this after every AWU.
+void PM_sysclk_pll_48mhz(void) {
+    RCC_DeInit();
+    RCC_HSICmd(ENABLE);
+    RCC_HCLKConfig(RCC_SYSCLK_Div1);
+
+    RCC_PLLCmd(DISABLE);
+    RCC_PLLConfig(RCC_PLLSource_HSI_MUL2);
+    RCC_PLLCmd(ENABLE);
+    while (RCC_GetFlagStatus(RCC_FLAG_PLLRDY) == RESET) {}
+
+    RCC_SYSCLKConfig(RCC_SYSCLKSource_PLLCLK);
+    RCC_ClocksTypeDef c;
+    RCC_GetClocksFreq(&c);
+    SystemCoreClock = c.SYSCLK_Frequency;
+}
