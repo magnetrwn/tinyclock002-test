@@ -53,16 +53,15 @@ int main(void) {
     SystemInit();
     RCC_SYSCLKConfig(RCC_SYSCLKSource_HSI);
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1);
-    PM_sysclk_pll_48mhz();
+    PM_sysclk_pll48();
+    __enable_irq();
     Delay_Init();
 
     UART_Init(230400);
 
-    __enable_irq();
     PM_standby_init(1500);
-    PM_standby_enter();
-    PM_standby_enter();
-    PM_sysclk_pll_48mhz();
+    PM_standby_enter(ON_STANDBY_EXIT_PLL48_SYSCLK);
+    PM_standby_enter(ON_STANDBY_EXIT_PLL48_SYSCLK);
     Delay_Init();
 
     DS1302_init_basic();

@@ -36,7 +36,7 @@ void ANIM_job(void) {
         while (LEDMUX_count_anim()) {
             LEDMUX_step();
         }
-        PM_standby_enter();
+        PM_standby_enter(ON_STANDBY_EXIT_PLL48_SYSCLK);
 
         is_cw = !is_cw;
         br_state = BR_UP;
