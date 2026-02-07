@@ -2,6 +2,7 @@
 #include "ledmux.h"
 // #include "ds1302.h"
 #include "pm.h"
+#include "pwm.h"
 
 typedef enum {
     BR_UP = 0,
@@ -37,6 +38,7 @@ void ANIM_job(void) {
             LEDMUX_step();
         }
         PM_standby_enter(ON_STANDBY_EXIT_PLL48_SYSCLK);
+        ring_tone_pattern_demo();
 
         is_cw = !is_cw;
         br_state = BR_UP;
