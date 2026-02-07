@@ -54,12 +54,12 @@ int main(void) {
     RCC_SYSCLKConfig(RCC_SYSCLKSource_HSI);
     NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1);
     PM_sysclk_pll48();
-    __enable_irq();
+    // __enable_irq();
     Delay_Init();
 
     UART_Init(230400);
 
-    PM_standby_init(1500);
+    PM_standby_init(1000);
     PM_standby_enter(ON_STANDBY_EXIT_PLL48_SYSCLK);
     PM_standby_enter(ON_STANDBY_EXIT_PLL48_SYSCLK);
     Delay_Init();
@@ -83,10 +83,8 @@ int main(void) {
     ANIM_setup();
     tim1_ch3_pwm_init_pc0_1mhz();
     for (;;) {
-        for (int i = 1; i < 262144; i *= 2) {
-            tim1_set_period_us(3000 + i);
-            ANIM_job();
-        }
+        tim1_set_period_us(20000);
+        ANIM_job();
     }
 
     return 0;
