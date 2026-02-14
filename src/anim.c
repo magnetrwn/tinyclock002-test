@@ -1,8 +1,9 @@
 #include "anim.h"
 #include "ledmux.h"
-// #include "ds1302.h"
+#include "ds1302.h"
 #include "pm.h"
 #include "pwm.h"
+#include <stdio.h>
 
 typedef enum {
     BR_UP = 0,
@@ -93,16 +94,16 @@ void ANIM_job(void) {
         LEDMUX_animate(rot, &anim);
     }
 
-    // if (!(i & 0xff)) {
-    //     rtc_time_t now;
-    //     if (DS1302_get_time(&now) == 0) {
-    //         printf("RTC time: %04d-%02d-%02d %02d:%02d:%02d (DOW=%d).\r\n",
-    //             now.year + 2000u, now.month, now.day,
-    //             now.hour, now.min, now.sec, now.dow);
-    //     } else {
-    //         printf("Failed to read RTC time.\r\n");
-    //     }
-    // }
+    if (!(i & 0xff)) {
+        rtc_time_t now;
+        if (DS1302_get_time(&now) == 0) {
+            printf("RTC time: %04d-%02d-%02d %02d:%02d:%02d (DOW=%d).\r\n",
+                now.year + 2000u, now.month, now.day,
+                now.hour, now.min, now.sec, now.dow);
+        } else {
+            printf("Failed to read RTC time.\r\n");
+        }
+    }
 
     LEDMUX_step();
     ++i;
